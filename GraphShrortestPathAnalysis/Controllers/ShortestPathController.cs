@@ -14,15 +14,17 @@ namespace GraphShrortestPathAnalysis.Controllers
         public IActionResult Index()
         {
             var graphModel = new GraphModel();
-            graphModel.InitialPoints = _graphGenerator.GenerateRandomGraph();
-            graphModel.Connections = _graphGenerator.GenerateEdges();
+            graphModel.InitialPoints = _graphGenerator.StartingGraph();
+            graphModel.Connections = _graphGenerator.GenerateEdges(false);
             return View(graphModel);
         }
         [HttpGet]
         public IActionResult GenerateRandoGraph()
         {
-            var data = string.Empty;
-            return Json(data);
+            var graphModel = new GraphModel();
+            graphModel.InitialPoints = _graphGenerator.GenerateRandomGraph();
+            graphModel.Connections = _graphGenerator.GenerateEdges(true);
+            return Json(graphModel);
         }
     }
 }

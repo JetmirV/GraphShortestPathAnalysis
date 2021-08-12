@@ -127,14 +127,24 @@
         <label>Select Algorithm: </label>
         <select id="algorithmSelection">
             <option value="1" selected>Dijksta</option>
-            <option value="2">A*</option>
+            <option value="2">A Star</option>
         </select>
+        <div>
+            <br />
+            <span>Distance : </span><span id="result"></span>
+            <br />
+            <span>Nodes visited : </span><span id="visitedNodes"></span>
+            <br />
+        </div>
+        <button id="randomGraph">Generate random Graph</button>
         <button id="btn_run_algorithm"><i class="fa fa-play icon"></i> Run Algorithm</button>
     </div>
     <div id="notification">Loading...</div>
 </body>
 
-<script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.min.js" integrity="sha384-cn7l7gDp0eyniUwwAZgrzD06kc/tftFf19TOAs2zVinnD/C7E91j9yyk5//jjpt/" crossorigin="anonymous"></script>
 <script>
     var algorithm = $('#algorithmSelection :selected').val();
     var startTime;
@@ -144,7 +154,9 @@
         $('#algorithmSelection').on('change', function () {
             algorithm = $('#algorithmSelection :selected').val();
         })
-    })
+    });
+
+    
 
     const translatePos = {
         x: window.innerWidth / 2,
@@ -172,35 +184,13 @@
     @foreach(var item in Model.Connections)
             {
                 @:initialEdges.push('@item');
-            }
+            };
 
-    //const initialPoints = [
-    //    [-150, 50],
-    //    [-130, -150],
-    //    [-10, -70],
-    //    [0, 80],
-    //    [80, -70],
-    //    [130, -130]
 
-    //].map((pointData) => {
-    //    pointData[0] = pointData[0] + translatePos.x;
-    //    pointData[1] = pointData[1] + translatePos.y;
-    //    return pointData;
-    //});
+    
 
-    //const initialEdges = [
-    //    "A_B",
-    //    "A_C",
-    //    "A_D",
-    //    "B_F",
-    //    "C_B",
-    //    "C_E",
-    //    "C_D",
-    //    "D_E",
-    //    "E_F",
-    //];
-    const points = [];
-    const edges = [];
+    var points = [];
+    var edges = [];
     const canvas = document.getElementById("canvas");
     const $canvas = $(canvas);
     const ctx = canvas.getContext("2d");
@@ -239,6 +229,56 @@
     let holdingPoint;
     let tmpEdge;
     let activeToolIdx = 0;
+    var heuristic = [];
+    let aStarCurrentCosts = {};
+    let visitedNodes = [];
+
+
+    $('#randomGraph').on("click", function () {
+        $.ajax({
+            url: '/ShortestPath/GenerateRandoGraph',
+            type: 'GET',
+            success: function (result) {
+                debugger;
+                initialPoints = [];
+                result.initialPoints.forEach(list => {
+                    var tempList = [];
+                    list.forEach(item => {
+                        tempList.push(item);
+                    });
+                    initialPoints.push(tempList)
+                });
+                initialPoints.map((pointData) => {
+                    pointData[0] = pointData[0] + translatePos.x;
+                    pointData[1] = pointData[1] + translatePos.y;
+                    return pointData;
+                });
+                initialEdges = [];
+                result.connections.forEach(conn => {
+                    initialEdges.push(conn);
+                });
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                resetVariables();
+                resetGraph();
+                initialize();                
+                updateCanvas();
+                createDijkstraGraph();
+            }
+        });
+    });
+
+    function resetVariables() {
+        debugger;
+        edges = [];
+        points = [];
+        trackedCosts = {};
+        processedNodes = [];
+        trackedParents = {};
+        optimalPath = [];
+        heuristic = [];
+        aStarCurrentCosts = {};
+        visitedNodes = [];
+    }
 
     function Timer(callback, delay) {
         var timerId, start, remaining = delay;
@@ -258,7 +298,6 @@
     };
 
     function getEdge(aName, bName) {
-        debugger;
         let foundEdge = null;
         let pointsName;
         edges.every(edge => {
@@ -277,8 +316,15 @@
     }
 
     function getPoint(name) {
-        debugger;
+
         return points[name.charCodeAt(0) - 65];
+    }
+
+    function getHeuristicPoint(name) {
+        if (name == undefined) {
+            return undefined;
+        }
+        return heuristic[name.charCodeAt(0) - 65];
     }
 
     function getPointsDistance(x1, y1, x2, y2) {
@@ -359,6 +405,12 @@
             ctx.textBaseline = "top";
             ctx.fillText(point.name, point.x + 5, point.y + 8);
 
+            if (algorithm == 2) {
+                const heuristicLength = getHeuristicPoint(point.name);
+                ctx.font = "bold 11px Arial";
+                ctx.fillText(`(${heuristicLength.expectedLength})`, point.x + 20, point.y + 20);
+            }
+
             if (cost) {
                 ctx.font = "bold 11px Arial";
                 ctx.fillText(`(${cost === Infinity ? '∞' : cost})`, point.x + 20, point.y + 8);
@@ -367,8 +419,16 @@
     }
 
     function findLowestCostNode() {
-        debugger;
-        const costs = trackedCosts;
+
+        var costs;
+        if (algorithm == 2) {
+            var test = Object.keys(aStarCurrentCosts).length;
+            costs = test == 0 ? trackedCosts : aStarCurrentCosts;
+        }
+        else {
+            costs = trackedCosts;
+        }
+
         const processed = processedNodes;
         const knownNodes = Object.keys(costs);
 
@@ -382,12 +442,12 @@
             }
             return lowest;
         }, null);
-
+        aStarCurrentCosts = {};
         return lowestCostNode;
     }
 
     function createDijkstraGraph() {
-        debugger;
+
         graph = {};
         let pointsName;
         let pointA;
@@ -407,6 +467,7 @@
         debugger;
         let parent = endName;
         let nextParent;
+        let uniqueChars = [...new Set(visitedNodes)];
         let edge;
         while (parent) {
             optimalPath.push(parent);
@@ -427,19 +488,23 @@
         };
 
         console.log(results);
+        $('#result').text(results.distance);
+        $('#visitedNodes').text(uniqueChars.length);
         updateCanvas();
         $icon.removeClass('fa-pause').addClass('fa-play');
         running = false;
+        $('#btn_run_algorithm').text("Run Algorithm");
     }
 
     function calculateChilds(node, index) {
-        debugger;
+
         const childsKeys = Object.keys(graph[node]);
         const costToReachNode = trackedCosts[node];
         const childrenOfNode = graph[node];
         const child = childsKeys[index];
         const costFromNodetoChild = childrenOfNode[child];
-        const costToChild = costToReachNode + costFromNodetoChild;
+        var costToChild = costToReachNode + costFromNodetoChild;
+
         const edge = getEdge(node, child);
 
         if (!child) {
@@ -472,6 +537,7 @@
     function calculateNode() {
         debugger;
         const node = findLowestCostNode();
+        visitedNodes.push(node);
         showNotification(`get lowest cost non-visited node: ${node}`, animationSpeed);
 
         if (!node || node == endName) {
@@ -482,13 +548,19 @@
         getPoint(node).processing = true;
         processedNodes.push(node);
         updateCanvas();
+        var isAStar = algorithm == 2 ? true : false;
         runningTimeout = new Timer(() => {
-            calculateChilds(node, 0);
+            if (isAStar) {
+                calculateAStarChild(node, 0);
+            }
+            else {
+                calculateChilds(node, 0);
+            }
         }, animationSpeed);
     }
 
     function resetGraph() {
-        debugger;
+
         edges.forEach(edge => {
             edge.shortestPath = false;
             edge.processed = false;
@@ -508,7 +580,7 @@
     }
 
     function runDijkstra() {
-        debugger;
+
         startName = $from.val();
         endName = $to.val();
 
@@ -523,7 +595,7 @@
     }
 
     function updateEdgesCost() {
-        debugger;
+
         edges.forEach(edge => {
             edge.cost = parseInt(
                 getPointsDistance(edge.a.x, edge.a.y, edge.b.x, edge.b.y),
@@ -533,7 +605,7 @@
     }
 
     function addNewEdge(pointA, pointB) {
-        debugger;
+
         if (pointA === pointB || getEdge(pointA.name, pointB.name) !== null) {
             return;
         }
@@ -548,7 +620,7 @@
     }
 
     function createPointHtml(point) {
-        debugger;
+
         const $option = $(document.createElement("option"));
         $option.html(point.name);
         $option.val(point.name);
@@ -557,7 +629,7 @@
     }
 
     function addNewPoint(x, y) {
-        debugger;
+
         const pointData = {
             name: String.fromCharCode(65 + points.length),
             x,
@@ -569,15 +641,21 @@
     }
 
     function runAlgorithm() {
-        debugger;
+
         running = true;
         $icon.removeClass('fa-play').addClass('fa-pause');
         createDijkstraGraph();
-        runDijkstra();
+        if (algorithm == 2) {
+            runAStar();
+        }
+        else {
+            runDijkstra();
+        }
+
     }
 
     function onDragPoint(state) {
-        debugger;
+
         const { evt } = state;
         const { x, y } = dragPos;
         holdingPoint.x = holdingPoint.x + (evt.clientX - x);
@@ -707,14 +785,14 @@
     }
 
     function onWindowResize() {
-        debugger;
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         updateCanvas();
     }
 
     function showNotification(text, duration) {
-        debugger;
+
         $notification
             .removeClass('hide')
             .html(text);
@@ -725,7 +803,7 @@
     }
 
     function selectTool(toolIdx) {
-        debugger;
+
         activeToolIdx = toolIdx;
 
         tools.forEach(tool => tool.$html.removeClass("active"));
@@ -733,7 +811,7 @@
     }
 
     function onAnimationSpeedChange(evt) {
-        debugger;
+
         $animationSpeedText.html(`(${evt.currentTarget.value})`);
         animationSpeed = parseInt(evt.currentTarget.value, 10);
     }
@@ -741,15 +819,18 @@
     function onRunClick() {
         if (!running) {
             runAlgorithm();
+            $('#btn_run_algorithm').text("Pause");
             return;
         }
 
         if ($icon.hasClass('fa-pause')) {
             $icon.removeClass('fa-pause').addClass('fa-play');
+            $('#btn_run_algorithm').text("Run Algorithm");
             runningTimeout.pause();
             notificationTimeout.pause();
         } else {
             $icon.removeClass('fa-play').addClass('fa-pause');
+            $('#btn_run_algorithm').text("Pause");
             runningTimeout.resume();
             notificationTimeout.resume();
         }
@@ -788,7 +869,7 @@
                 onRunClick();
             }
             else {
-
+                startAStar();
             }
         });
         $animationSpeedInput.on('change', onAnimationSpeedChange);
@@ -801,6 +882,79 @@
         $notification.addClass('hide');
 
         onWindowResize();
+    }
+
+    function startAStar() {
+
+        endName = $to.val();
+        var endpoint = getPoint(endName);
+
+        points.forEach((point) => {
+            const singlePoint = {
+                name: point.name,
+                expectedLength: Math.floor(getPointsDistance(point.x, point.y, endpoint.x, endpoint.y))
+            };
+            heuristic.push(singlePoint);
+        });
+        updateCanvas();
+        onRunClick();
+
+    }
+
+    function runAStar() {
+        startName = $from.val();
+        endName = $to.val();
+
+        resetGraph();
+
+        points.forEach(point => {
+            trackedCosts[point.name] = Infinity;
+        });
+        trackedCosts[startName] = 0;
+        visitedNodes = [];
+        calculateNode();
+    }
+
+    function calculateAStarChild(node, index) {
+
+        const childsKeys = Object.keys(graph[node]);
+        const costToReachNode = trackedCosts[node];
+        const childrenOfNode = graph[node];
+        const child = childsKeys[index];
+        const costFromNodetoChild = childrenOfNode[child];
+        var costToChild;
+
+        var heuristicLength = getHeuristicPoint(child) == undefined ? undefined : getHeuristicPoint(child).expectedLength;
+        costToChild = costToReachNode + costFromNodetoChild + heuristicLength;
+
+        const edge = getEdge(node, child);
+
+        if (!child) {
+            getPoint(node).processing = false;
+            calculateNode();
+            return;
+        }
+
+        if (edge.processed) {
+            calculateAStarChild(node, index + 1);
+            return;
+        }
+        aStarCurrentCosts[child] = costToChild;
+
+        if (!trackedCosts[child] || trackedCosts[child] > costToChild) {
+            showNotification(`calculate ${node}-${child}: ${costToChild} < ${trackedCosts[child]}, updating ${child} cost...`, animationSpeed);
+            trackedCosts[child] = costToReachNode + costFromNodetoChild;
+            trackedParents[child] = node;
+        } else {
+            showNotification(`calculate ${node}-${child}: ${costToChild} > ${trackedCosts[child]}, maintain ${child} cost...`, animationSpeed);
+        }
+
+        edge.processed = true;
+        updateCanvas();
+
+        runningTimeout = new Timer(() => {
+            calculateAStarChild(node, index + 1);
+        }, animationSpeed);
     }
 
     initialize();
