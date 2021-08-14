@@ -234,8 +234,8 @@
     let visitedNodes = [];
 
 
-    $('#randomGraph').on("click", function () {
-        $.ajax({
+    $('#randomGraph').on("click", function () {  
+            $.ajax({
             url: '/ShortestPath/GenerateRandoGraph',
             type: 'GET',
             success: function (result) {
@@ -257,14 +257,14 @@
                 result.connections.forEach(conn => {
                     initialEdges.push(conn);
                 });
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+               
+                ctx.clearRect(0, 0, canvas.width, canvas.height);                
                 resetVariables();
                 resetGraph();
-                initialize();                
+                initialize();               
                 updateCanvas();
                 createDijkstraGraph();
-            }
-        });
+            }});
     });
 
     function resetVariables() {
@@ -419,7 +419,7 @@
     }
 
     function findLowestCostNode() {
-
+        debugger;
         var costs;
         if (algorithm == 2) {
             var test = Object.keys(aStarCurrentCosts).length;
@@ -442,7 +442,7 @@
             }
             return lowest;
         }, null);
-        aStarCurrentCosts = {};
+        aStarCurrentCosts[lowestCostNode] = Infinity;
         return lowestCostNode;
     }
 
