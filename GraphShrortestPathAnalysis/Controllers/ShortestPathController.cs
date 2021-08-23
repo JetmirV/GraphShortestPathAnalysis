@@ -19,10 +19,10 @@ namespace GraphShrortestPathAnalysis.Controllers
             return View(graphModel);
         }
         [HttpGet]
-        public IActionResult GenerateRandoGraph()
+        public IActionResult GenerateRandoGraph(int nodesCount)
         {
             var graphModel = new GraphModel();
-            graphModel.InitialPoints = _graphGenerator.GenerateRandomGraph();
+            graphModel.InitialPoints = _graphGenerator.GenerateRandomGraph(nodesCount);
             graphModel.Connections = _graphGenerator.GenerateEdges(true);
             return Json(graphModel);
         }

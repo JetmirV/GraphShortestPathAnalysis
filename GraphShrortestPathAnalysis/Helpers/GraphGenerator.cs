@@ -9,14 +9,12 @@ namespace GraphShortestPathAnalysis.Helpers
     {
         private int _initialPointsCount;
         private bool isStartingGraph = true;
-        public List<List<int>> GenerateRandomGraph()
+        public List<List<int>> GenerateRandomGraph(int limit)
         {
-            int numLimit = 5;
-
             var initialPoints = new List<List<int>>();
 
             Random rnd = new Random();
-            for (int i = 0; i < numLimit; i++)
+            for (int i = 0; i < limit; i++)
             {
                 var x = rnd.Next(-600, 900);
                 var y = rnd.Next(-400, 400);

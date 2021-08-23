@@ -136,6 +136,11 @@
             <span>Nodes visited : </span><span id="visitedNodes"></span>
             <br />
         </div>
+        <div>
+            Number of nodes : <input type="number" id="nodesCount" name="nodesCount" min="1" max="150">
+            <br />
+            <br />
+        </div>
         <button id="randomGraph">Generate random Graph</button>
         <button id="btn_run_algorithm"><i class="fa fa-play icon"></i> Run Algorithm</button>
     </div>
@@ -156,7 +161,7 @@
         })
     });
 
-    
+
 
     const translatePos = {
         x: window.innerWidth / 2,
@@ -187,7 +192,7 @@
             };
 
 
-    
+
 
     var points = [];
     var edges = [];
@@ -232,14 +237,19 @@
     var heuristic = [];
     let aStarCurrentCosts = {};
     let visitedNodes = [];
+    var nodesCount = @Model.InitialPoints.Count();
 
 
-    $('#randomGraph').on("click", function () {  
-            $.ajax({
-            url: '/ShortestPath/GenerateRandoGraph',
+    $('#randomGraph').on("click", function () {
+        debugger;
+        nodesCount = $('#nodesCount').val()
+
+        $.ajax({
+            url: '/ShortestPath/GenerateRandoGraph?nodesCount=' + nodesCount,
             type: 'GET',
             success: function (result) {
                 debugger;
+                resetVariables();
                 initialPoints = [];
                 result.initialPoints.forEach(list => {
                     var tempList = [];
@@ -257,13 +267,13 @@
                 result.connections.forEach(conn => {
                     initialEdges.push(conn);
                 });
-               
-                ctx.clearRect(0, 0, canvas.width, canvas.height);                
-                resetVariables();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
                 resetGraph();
-                initialize();               
-                updateCanvas();
-                createDijkstraGraph();
+                initialize();
+                /*updateCanvas();*/
+                /*createDijkstraGraph();*/
             }});
     });
 
@@ -278,6 +288,8 @@
         heuristic = [];
         aStarCurrentCosts = {};
         visitedNodes = [];
+        running = false;
+        algorithm = 1;
     }
 
     function Timer(callback, delay) {
@@ -344,7 +356,6 @@
     }
 
     function updateCanvas() {
-        debugger;
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
@@ -419,7 +430,6 @@
     }
 
     function findLowestCostNode() {
-        debugger;
         var costs;
         if (algorithm == 2) {
             var test = Object.keys(aStarCurrentCosts).length;
@@ -447,7 +457,7 @@
     }
 
     function createDijkstraGraph() {
-
+        debugger;
         graph = {};
         let pointsName;
         let pointA;
@@ -497,7 +507,7 @@
     }
 
     function calculateChilds(node, index) {
-
+        debugger;
         const childsKeys = Object.keys(graph[node]);
         const costToReachNode = trackedCosts[node];
         const childrenOfNode = graph[node];
@@ -549,14 +559,32 @@
         processedNodes.push(node);
         updateCanvas();
         var isAStar = algorithm == 2 ? true : false;
-        runningTimeout = new Timer(() => {
+        //runningTimeout = new Timer(() => {
+        //    if (isAStar) {
+        //        calculateAStarChild(node, 0);
+        //    }
+        //    else {
+        //        calculateChilds(node, 0);
+        //    }
+        //}, animationSpeed);
+
+        //setInterval(() => {
+        //    if (isAStar) {
+        //        calculateAStarChild(node, 0);
+        //    }
+        //    else {
+        //        calculateChilds(node, 0);
+        //    }
+        //}, animationSpeed )
+
+        setTimeout(() => {
             if (isAStar) {
                 calculateAStarChild(node, 0);
             }
             else {
                 calculateChilds(node, 0);
             }
-        }, animationSpeed);
+        }, animationSpeed)
     }
 
     function resetGraph() {
@@ -580,7 +608,7 @@
     }
 
     function runDijkstra() {
-
+        debugger;
         startName = $from.val();
         endName = $to.val();
 
@@ -641,7 +669,7 @@
     }
 
     function runAlgorithm() {
-
+        debugger;
         running = true;
         $icon.removeClass('fa-play').addClass('fa-pause');
         createDijkstraGraph();
@@ -651,7 +679,7 @@
         else {
             runDijkstra();
         }
-
+        return;
     }
 
     function onDragPoint(state) {
@@ -817,6 +845,7 @@
     }
 
     function onRunClick() {
+        debugger;
         if (!running) {
             runAlgorithm();
             $('#btn_run_algorithm').text("Pause");
@@ -828,12 +857,14 @@
             $('#btn_run_algorithm').text("Run Algorithm");
             runningTimeout.pause();
             notificationTimeout.pause();
+            return
         } else {
             $icon.removeClass('fa-play').addClass('fa-pause');
             $('#btn_run_algorithm').text("Pause");
-            runningTimeout.resume();
-            notificationTimeout.resume();
+            runningTimeout.resume;
+            notificationTimeout.resume;
         }
+
     }
 
     function initialize() {
@@ -863,8 +894,11 @@
         tools.forEach((tool, i) => tool.$html.on("click", () => selectTool(i)));
         selectTool(toolsNames.select);
 
+        $('#nodesCount').val(nodesCount);
+
         $btnRunAlgorithm.on('click', function () {
             debugger;
+            algorithm = $('#algorithmSelection :selected').val();
             if (algorithm == 1) {
                 onRunClick();
             }
