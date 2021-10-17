@@ -80,7 +80,7 @@ namespace GraphShortestPathAnalysis.Helpers
                 new List<int> { -10, -70 },
                 new List<int> { 0, 80 },
                 new List<int> { 80, -70 },
-                new List<int> { 130, -130 },
+                new List<int> { 130, -130 }               
             };
             _initialPointsCount = points.Count();
             return points;

@@ -1,0 +1,99 @@
+﻿body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 1px solid black;
+}
+
+.hide {
+    display: none;
+}
+
+.controller {
+    width: 15%;
+    position: absolute;
+    left: 3%;
+    top: 20%;
+    z-index: 1;
+    background: #f1f1f1;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    margin: 5px 0 8px;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 5px 15px;
+}
+
+.active {
+    background: #1d48f1;
+    color: #fff;
+}
+
+
+#btn_run_algorithm {
+    display: block;
+    margin-top: 15px;
+    background: #ff0000;
+    color: #fff;
+    padding: 10px 25px;
+    font-size: 1.4rem;
+}
+
+#notification {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 25px;
+    text-align: center;
+    color: #fff;
+    padding: 6px 25px 5px;
+    bottom: 10px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+label {
+    display: block;
+    font-size: 0.9rem;
+}
+
+input[type=range] {
+    width: 100%;
+}
+
+#algorithmSelection {
+    width: 100%;
+    height: 20%;
+    font-size: medium;
+}
+
+.modal {
+    position: absolute;
+    top: 20%;
+    left: 40%;
+    width: 20%;
+    height: 5%;
+    font-size: large;
+    border: 1px solid black;
+    border-radius: 30%;
+    text-align: center;
+    display: none;
+}
