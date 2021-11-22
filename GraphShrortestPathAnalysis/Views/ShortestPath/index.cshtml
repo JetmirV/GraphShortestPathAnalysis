@@ -37,6 +37,8 @@
             <br />
             <span>Nodes visited : </span><span id="visitedNodes"></span>
             <br />
+            <span>TIme passed (ms) : </span><span id="executionTime"></span>
+            <br />
         </div>
         <div>
             Number of nodes : <input type="number" id="nodesCount" name="nodesCount" min="1" max="150">
@@ -59,8 +61,6 @@
             algorithm = $('#algorithmSelection :selected').val();
         })
     });
-
-
 
     const translatePos = {
         x: window.innerWidth / 2,
@@ -240,7 +240,7 @@
     }
 
     function getPointsDistance(x1, y1, x2, y2) {
-        return Math.round((Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)) / 100);
+        return (Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2));
     }
 
     function drawTmpEdge() {
@@ -284,7 +284,7 @@
             ctx.textBaseline = "top";
             ctx.fillStyle = "#000";
             ctx.fillText(
-                edge.cost,
+                Math.round(edge.cost / 100),
                 (edge.a.x + edge.b.x) / 2 + 5,
                 (edge.a.y + edge.b.y) / 2 + 8
             );
@@ -319,12 +319,12 @@
             if (algorithm == 2) {
                 const heuristicLength = getHeuristicPoint(point.name);
                 ctx.font = "bold 11px Arial";
-                ctx.fillText(`(${heuristicLength.expectedLength})`, point.x + 20, point.y + 20);
+                ctx.fillText(`(${Math.round(heuristicLength.expectedLength / 100)})`, point.x + 20, point.y + 20);
             }
 
             if (cost) {
                 ctx.font = "bold 11px Arial";
-                ctx.fillText(`(${cost === Infinity ? '∞' : cost})`, point.x + 20, point.y + 8);
+                ctx.fillText(`(${cost === Infinity ? '∞' : Math.round(cost/100)})`, point.x + 20, point.y + 8);
             }
         });
     }
@@ -396,12 +396,17 @@
         };
 
         console.log(results);
-        $('#result').text(results.distance);
+        $('#result').text(Math.round(results.distance/100));
         $('#visitedNodes').text(uniqueChars.length);
+        endTime = new Date().getTime();
+        var time = endTime - startTime;
+        $('#executionTime').text(time)
         updateCanvas();
         $icon.removeClass('fa-pause').addClass('fa-play');
         running = false;
         $('#btn_run_algorithm').text("Run Algorithm");
+        const used = window.process.memoryUsage().heapUsed / 1024 / 1024;
+        console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
     }
 
     function calculateChilds(node, index) {
@@ -426,11 +431,11 @@
         }
 
         if (!trackedCosts[child] || trackedCosts[child] > costToChild) {
-            showNotification(`calculate ${node}-${child}: ${costToChild} < ${trackedCosts[child]}, updating ${child} cost...`, animationSpeed);
+            showNotification(`calculate ${node}-${child}: ${Math.round(costToChild/100)} < ${Math.round(trackedCosts[child]/100)}, updating ${child} cost...`, animationSpeed);
             trackedCosts[child] = costToChild;
             trackedParents[child] = node;
         } else {
-            showNotification(`calculate ${node}-${child}: ${costToChild} > ${trackedCosts[child]}, maintain ${child} cost...`, animationSpeed);
+            showNotification(`calculate ${node}-${child}: ${Math.round(costToChild/100)} > ${Math.round(trackedCosts[child]/100)}, maintain ${child} cost...`, animationSpeed);
         }
 
         edge.processed = true;
@@ -484,6 +489,7 @@
         if (runningTimeout) {
             clearTimeout(runningTimeout);
         }
+        clearTimeout(runningTimeout);
     }
 
     function runDijkstra() {
@@ -771,7 +777,8 @@
 
         $('#nodesCount').val(nodesCount);
 
-        $btnRunAlgorithm.on('click', function () {           
+        $btnRunAlgorithm.on('click', function () {
+            startTime = new Date().getTime();
             algorithm = $('#algorithmSelection :selected').val();
             if (algorithm == 1) {
                 onRunClick();
